@@ -11,11 +11,18 @@ public class Robot extends TimedRobot {
   private TalonFX elevatorMotor;
   private final DutyCycleOut dutyOut = new DutyCycleOut(0);
 
+  // Encoder-based software limits (in motor rotations)
+  private final double MAX_HEIGHT = 100.0; // adjust based on your elevator
+  private final double MIN_HEIGHT = 0.0;
+
   @Override
   public void robotInit() {
     controller = new XboxController(0);
     elevatorMotor = new TalonFX(1);
-    System.out.println("Robot initialized");
+
+    // Zero encoder at startup (assume elevator starts at bottom)
+    elevatorMotor.setPosition(0.0);
+    System.out.println("Robot initialized, encoder zeroed");
   }
 
   @Override
@@ -23,22 +30,26 @@ public class Robot extends TimedRobot {
     boolean yPressed = controller.getYButton();
     boolean aPressed = controller.getAButton();
 
-    // Always print button states for debugging
-    System.out.println("teleoperated loop  Y=" + yPressed + " A=" + aPressed);
+    // Get Falcon 500 integrated sensor position (in rotations)
+    double position = elevatorMotor.getPosition().getValueAsDouble();
+    System.out.println("Current Position: " + position);
 
-    if (yPressed) {
+    // Move up only if below max height
+    if (yPressed && position < MAX_HEIGHT) {
       elevatorMotor.setControl(dutyOut.withOutput(0.5));
       System.out.println("Elevator moving up");
-    } else if (aPressed) {
+    }
+    // Move down only if above min height
+    else if (aPressed && position > MIN_HEIGHT) {
       elevatorMotor.setControl(dutyOut.withOutput(-0.5));
       System.out.println("Elevator moving down");
-    } else {
+    }
+    // Otherwise stop
+    else {
       elevatorMotor.setControl(dutyOut.withOutput(0.0));
       System.out.println("Elevator stopped");
     }
 
-    
-    System.out.flush(); 
-  
+    System.out.flush();
   }
 }
