@@ -12,7 +12,7 @@ public class Robot extends TimedRobot {
   private final DutyCycleOut dutyOut = new DutyCycleOut(0);
 
   // Encoder-based software limits (in motor rotations)
-  private final double MAX_HEIGHT = 100.0; // adjust based on your elevator
+  private final double MAX_HEIGHT = 5.0; // adjust based on your elevator
   private final double MIN_HEIGHT = 0.0;
 
   @Override
