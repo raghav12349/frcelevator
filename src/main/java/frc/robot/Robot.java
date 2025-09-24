@@ -3,53 +3,59 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.controls.DutyCycleOut;
 
 public class Robot extends TimedRobot {
 
   private XboxController controller;
   private TalonFX elevatorMotor;
+  private TalonFX elevatorMotor2;
   private final DutyCycleOut dutyOut = new DutyCycleOut(0);
 
-  // Encoder-based software limits (in motor rotations)
-  private final double MAX_HEIGHT = 5.0; // adjust based on your elevator
-  private final double MIN_HEIGHT = 0.0;
 
   @Override
   public void robotInit() {
     controller = new XboxController(0);
     elevatorMotor = new TalonFX(1);
-
-    // Zero encoder at startup (assume elevator starts at bottom)
-    elevatorMotor.setPosition(0.0);
-    System.out.println("Robot initialized, encoder zeroed");
+    elevatorMotor2 = new TalonFX(2);
+    System.out.println("Robot initialized");
+    var currentconfiguration = new CurrentLimitsConfigs();
+    currentconfiguration.SupplyCurrentLimit = 40;
+    currentconfiguration.SupplyCurrentLimitEnable = true;
+    elevatorMotor.getConfigurator().refresh(currentconfiguration);
+    elevatorMotor2.getConfigurator().refresh(currentconfiguration);
+    elevatorMotor.getConfigurator().apply(currentconfiguration);
+    elevatorMotor2.getConfigurator().apply(currentconfiguration);
+    
   }
 
   @Override
   public void teleopPeriodic() {
     boolean yPressed = controller.getYButton();
     boolean aPressed = controller.getAButton();
+    double rotations = elevatorMotor.getPosition().getValueAsDouble();
+    // Always print button states for debugging
+    System.out.println("Teleoperated loop  Y=" + yPressed + " A=" + aPressed);
 
-    // Get Falcon 500 integrated sensor position (in rotations)
-    double position = elevatorMotor.getPosition().getValueAsDouble();
-    System.out.println("Current Position: " + position);
-
-    // Move up only if below max height
-    if (yPressed && position < MAX_HEIGHT) {
+    if (yPressed && rotations<=5.0) {
       elevatorMotor.setControl(dutyOut.withOutput(0.5));
+      elevatorMotor2.setControl(dutyOut.withOutput(0.5));
       System.out.println("Elevator moving up");
-    }
-    // Move down only if above min height
-    else if (aPressed && position > MIN_HEIGHT) {
+      System.out.println(rotations);
+    } else if (aPressed && rotations>=0.0) {
       elevatorMotor.setControl(dutyOut.withOutput(-0.5));
+      elevatorMotor2.setControl(dutyOut.withOutput(-0.5));
       System.out.println("Elevator moving down");
-    }
-    // Otherwise stop
-    else {
+      System.out.println(rotations);
+    } else {
       elevatorMotor.setControl(dutyOut.withOutput(0.0));
+      elevatorMotor2.setControl(dutyOut.withOutput(0.0));
       System.out.println("Elevator stopped");
     }
 
-    System.out.flush();
+    
+    System.out.flush(); 
+  
   }
 }
