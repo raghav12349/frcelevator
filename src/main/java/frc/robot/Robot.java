@@ -20,7 +20,7 @@ public class Robot extends TimedRobot {
   private final double HEIGHT_ONE = -3.85;   // Example revolutions for X
   private final double HEIGHT_TWO = -13.85;  // Example revolutions for B
 
-  private double targetPos = 0.0;  // default
+  private double targetPos = 0.0;  // default target
 
   @Override
   public void robotInit() {
@@ -40,40 +40,37 @@ public class Robot extends TimedRobot {
   public void teleopPeriodic() {
     boolean yPressed = controller.getYButton();
     boolean aPressed = controller.getAButton();
-    boolean xPressed = controller.getXButtonPressed();
-    boolean bPressed = controller.getBButtonPressed();
+    boolean xPressed = controller.getXButton();  // Use getXButton (true while held)
+    boolean bPressed = controller.getBButton();  // Use getBButton (true while held)
 
     double rotations = elevatorMotor.getPosition().getValueAsDouble();
 
-    // Preset heights
+    // Update target position when X/B is pressed
     if (xPressed) {
       targetPos = HEIGHT_ONE;
-      System.out.println("Target = HEIGHT_ONE (" + HEIGHT_ONE + " revs)");
-    } else if (bPressed) {
+      System.out.println("Target updated to HEIGHT_ONE: " + HEIGHT_ONE);
+    }
+    if (bPressed) {
       targetPos = HEIGHT_TWO;
-      System.out.println("Target = HEIGHT_TWO (" + HEIGHT_TWO + " revs)");
+      System.out.println("Target updated to HEIGHT_TWO: " + HEIGHT_TWO);
     }
 
+    // Manual override with A/Y
     if (aPressed && rotations <= -1.3) {
-      // Manual jog up
       elevatorMotor.setControl(dutyOut.withOutput(0.1));
       elevatorMotor2.setControl(dutyOut.withOutput(0.1));
-      System.out.println("Elevator moving up (manual)");
+      System.out.println("Manual up");
+      targetPos = rotations; // update target so holding works after manual
     } else if (yPressed && rotations >= -18) {
-      // Manual jog down
       elevatorMotor.setControl(dutyOut.withOutput(-0.1));
       elevatorMotor2.setControl(dutyOut.withOutput(-0.1));
-      System.out.println("Elevator moving down (manual)");
-    } else if (xPressed || bPressed) {
-      // Move to preset position
-      elevatorMotor.setControl(positionControl.withPosition(targetPos));
-      elevatorMotor2.setControl(positionControl.withPosition(targetPos));
-      System.out.println("Elevator going to preset | Target = " + targetPos);
+      System.out.println("Manual down");
+      targetPos = rotations; // update target so holding works after manual
     } else {
-      // Hold last commanded position
+      // Default: hold last target position
       elevatorMotor.setControl(positionControl.withPosition(targetPos));
       elevatorMotor2.setControl(positionControl.withPosition(targetPos));
-      System.out.println("Elevator holding position | Target = " + targetPos);
+      System.out.println("Holding position | Target = " + targetPos);
     }
 
     System.out.println("Current rotations = " + rotations);
