@@ -5,75 +5,99 @@ import edu.wpi.first.wpilibj.XboxController;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
 
 public class Robot extends TimedRobot {
 
   private XboxController controller;
   private TalonFX elevatorMotor;
   private TalonFX elevatorMotor2;
-
   private final DutyCycleOut dutyOut = new DutyCycleOut(0);
-  private final PositionDutyCycle positionControl = new PositionDutyCycle(0);
 
-  // Replace with your calibrated revolution values
-  private final double HEIGHT_ONE = -3.85;   // Example revolutions for X
-  private final double HEIGHT_TWO = -13.85;  // Example revolutions for B
-
-  private double targetPos = 0.0;  // default target
 
   @Override
   public void robotInit() {
     controller = new XboxController(0);
-    elevatorMotor = new TalonFX(9);
-    elevatorMotor2 = new TalonFX(10);
+    elevatorMotor = new TalonFX(10);
+    elevatorMotor2 = new TalonFX(11);
     System.out.println("Robot initialized");
-
     var currentconfiguration = new CurrentLimitsConfigs();
     currentconfiguration.SupplyCurrentLimit = 40;
     currentconfiguration.SupplyCurrentLimitEnable = true;
+    elevatorMotor.getConfigurator().refresh(currentconfiguration);
+    elevatorMotor2.getConfigurator().refresh(currentconfiguration);
     elevatorMotor.getConfigurator().apply(currentconfiguration);
     elevatorMotor2.getConfigurator().apply(currentconfiguration);
+  
   }
 
   @Override
   public void teleopPeriodic() {
     boolean yPressed = controller.getYButton();
     boolean aPressed = controller.getAButton();
-    boolean xPressed = controller.getXButton();  // Use getXButton (true while held)
-    boolean bPressed = controller.getBButton();  // Use getBButton (true while held)
-
+    boolean xPressed = controller.getXButton();
+    boolean bPressed = controller.getBButton();
     double rotations = elevatorMotor.getPosition().getValueAsDouble();
+    // Always print button states for debugging
+    System.out.println("Teleoperated loop  Y=" + yPressed + " A=" + aPressed);
 
-    // Update target position when X/B is pressed
-    if (xPressed) {
-      targetPos = HEIGHT_ONE;
-      System.out.println("Target updated to HEIGHT_ONE: " + HEIGHT_ONE);
+    if (aPressed && rotations<=8.0) {
+      while(rotations<8.0){
+        elevatorMotor.setControl(dutyOut.withOutput(0.1));
+        elevatorMotor2.setControl(dutyOut.withOutput(0.1));
+        System.out.println("Elevator moving up");
+        System.out.println(rotations);
+      }      
+    } else if (yPressed && rotations>=-8.0) {
+       while(rotations>-8.0){
+         elevatorMotor.setControl(dutyOut.withOutput(-0.1));
+         elevatorMotor2.setControl(dutyOut.withOutput(-0.1));
+         System.out.println("Elevator moving down");
+         System.out.println(rotations);
+      }
+      
+    } else if (xPressed){
+        System.out.print("Elevator Moving to Option 2");
+        System.out.print(rotations);
+        if (rotations<4.0){
+          while(rotations<=4.0){
+            elevatorMotor.setControl(dutyOut.withOutput(0.1));
+            elevatorMotor2.setControl(dutyOut.withOutput(0.1));
+            System.out.print("Elevator Moving to Option 2");
+            System.out.print(rotations);
+          }
+        } else if(rotations>4.0){
+            while(rotations>=4.0){
+              elevatorMotor.setControl(dutyOut.withOutput(-0.1));
+              elevatorMotor2.setControl(dutyOut.withOutput(-0.1));              
+        }        
+        }
+    }else if (bPressed){
+      if (rotations<-4.0){
+        System.out.print("Elevator Moving to Option 3");
+        System.out.print(rotations);
+        while(rotations<=-4.0){
+          elevatorMotor.setControl(dutyOut.withOutput(0.1));
+          elevatorMotor2.setControl(dutyOut.withOutput(0.1));        
+        }
+      } else if(rotations>-4.0){
+          System.out.print("Elevator Moving to Option 3");
+          System.out.print(rotations);
+          while(rotations>=-4.0){
+            elevatorMotor.setControl(dutyOut.withOutput(-0.1));
+            elevatorMotor2.setControl(dutyOut.withOutput(-0.1));
+
+      }        
+      }
     }
-    if (bPressed) {
-      targetPos = HEIGHT_TWO;
-      System.out.println("Target updated to HEIGHT_TWO: " + HEIGHT_TWO);
+    else {
+      elevatorMotor.setControl(dutyOut.withOutput(0.0));
+      elevatorMotor2.setControl(dutyOut.withOutput(0.0));
+      System.out.println("Elevator stopped");
     }
 
-    // Manual override with A/Y
-    if (aPressed && rotations <= -1.3) {
-      elevatorMotor.setControl(dutyOut.withOutput(0.1));
-      elevatorMotor2.setControl(dutyOut.withOutput(0.1));
-      System.out.println("Manual up");
-      targetPos = rotations; // update target so holding works after manual
-    } else if (yPressed && rotations >= -18) {
-      elevatorMotor.setControl(dutyOut.withOutput(-0.1));
-      elevatorMotor2.setControl(dutyOut.withOutput(-0.1));
-      System.out.println("Manual down");
-      targetPos = rotations; // update target so holding works after manual
-    } else {
-      // Default: hold last target position
-      elevatorMotor.setControl(positionControl.withPosition(targetPos));
-      elevatorMotor2.setControl(positionControl.withPosition(targetPos));
-      System.out.println("Holding position | Target = " + targetPos);
-    }
-
-    System.out.println("Current rotations = " + rotations);
-    System.out.flush();
-  }
+    
+    System.out.flush(); 
+  
+  
+}
 }
