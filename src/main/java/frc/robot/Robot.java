@@ -5,73 +5,98 @@ import edu.wpi.first.wpilibj.XboxController;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
 import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
 
 public class Robot extends TimedRobot {
 
-    private XboxController controller;
-    private TalonFX elevatorMotor;
-    private TalonFX elevatorMotor2;
+  private XboxController controller;
+  private TalonFX elevatorMotor;
+  private TalonFX elevatorMotor2;
+  private final DutyCycleOut dutyOut = new DutyCycleOut(0);
 
-    private final DutyCycleOut dutyOut = new DutyCycleOut(0);
-    private final PositionDutyCycle positionControl = new PositionDutyCycle(0);
 
-    // Preset heights in revolutions (calibrated)
-    private final double HEIGHT_ONE = -3.85;   // X button
-    private final double HEIGHT_TWO = -13.85;  // B button
+  @Override
+  public void robotInit() {
+    controller = new XboxController(0);
+    elevatorMotor = new TalonFX(10);
+    elevatorMotor2 = new TalonFX(11);
+    System.out.println("Robot initialized");
+    var currentconfiguration = new CurrentLimitsConfigs();
+    currentconfiguration.SupplyCurrentLimit = 40;
+    currentconfiguration.SupplyCurrentLimitEnable = true;
+    elevatorMotor.getConfigurator().refresh(currentconfiguration);
+    elevatorMotor2.getConfigurator().refresh(currentconfiguration);
+    elevatorMotor.getConfigurator().apply(currentconfiguration);
+    elevatorMotor2.getConfigurator().apply(currentconfiguration);
+  
+  }
 
-    private double targetPos = 0.0; // Last commanded target
+  @Override
+  public void teleopPeriodic() {
+    boolean yPressed = controller.getYButton();
+    boolean aPressed = controller.getAButton();
+    boolean xPressed = controller.getXButton();
+    boolean bPressed = controller.getBButton();
+    double rotations = elevatorMotor.getPosition().getValueAsDouble();
+    // Always print button states for debugging
+    System.out.println("Teleoperated loop  Y=" + yPressed + " A=" + aPressed);
 
-    @Override
-    public void robotInit() {
-        controller = new XboxController(0);
-        elevatorMotor = new TalonFX(9);
-        elevatorMotor2 = new TalonFX(10);
-        System.out.println("Robot initialized");
-
-        var currentconfiguration = new CurrentLimitsConfigs();
-        currentconfiguration.SupplyCurrentLimit = 40;
-        currentconfiguration.SupplyCurrentLimitEnable = true;
-        elevatorMotor.getConfigurator().apply(currentconfiguration);
-        elevatorMotor2.getConfigurator().apply(currentconfiguration);
-
-        // Initialize targetPos to current position to avoid jump
-        targetPos = elevatorMotor.getPosition().getValueAsDouble();
-    }
-
-    @Override
-    public void teleopPeriodic() {
-        double rotations = elevatorMotor.getPosition().getValueAsDouble();
-
-        // Single-press preset heights
-        if (controller.getXButtonPressed()) {
-            targetPos = HEIGHT_ONE;
-            System.out.println("X pressed: moving to HEIGHT_ONE = " + HEIGHT_ONE);
-        }
-        if (controller.getBButtonPressed()) {
-            targetPos = HEIGHT_TWO;
-            System.out.println("B pressed: moving to HEIGHT_TWO = " + HEIGHT_TWO);
-        }
-
-        // Manual override (A/Y) — updates targetPos to hold after release
-        if (controller.getAButton() && rotations <= -1.3) {
+    if (aPressed && rotations<7.0) {
+      while(rotations<=7.0){
+        elevatorMotor.setControl(dutyOut.withOutput(0.1));
+        elevatorMotor2.setControl(dutyOut.withOutput(0.1));
+        System.out.println("Elevator moving up");
+        System.out.println(rotations);
+      }      
+    } else if (yPressed && rotations>-7.0) {
+       while(rotations>=-7.0){
+         elevatorMotor.setControl(dutyOut.withOutput(-0.1));
+         elevatorMotor2.setControl(dutyOut.withOutput(-0.1));
+         System.out.println("Elevator moving down");
+         System.out.println(rotations);
+      }
+      
+    } else if (xPressed){
+        System.out.print("Elevator Moving to Option 2");
+        System.out.print(rotations);
+        if (rotations<4.0){
+          while(rotations<=4.0){
             elevatorMotor.setControl(dutyOut.withOutput(0.1));
             elevatorMotor2.setControl(dutyOut.withOutput(0.1));
-            targetPos = rotations;
-            System.out.println("Manual up");
-        } else if (controller.getYButton() && rotations >= -18) {
+            System.out.print("Elevator Moving to Option 2");
+            System.out.print(rotations);
+          }
+        } else if(rotations>4.0){
+            while(rotations>=4.0){
+              elevatorMotor.setControl(dutyOut.withOutput(-0.1));
+              elevatorMotor2.setControl(dutyOut.withOutput(-0.1));              
+        }        
+        }
+    }else if (bPressed){
+      if (rotations<-4.0){
+        System.out.print("Elevator Moving to Option 3");
+        System.out.print(rotations);
+        while(rotations<=-4.0){
+          elevatorMotor.setControl(dutyOut.withOutput(0.1));
+          elevatorMotor2.setControl(dutyOut.withOutput(0.1));        
+        }
+      } else if(rotations>-4.0){
+          System.out.print("Elevator Moving to Option 3");
+          System.out.print(rotations);
+          while(rotations>=-4.0){
             elevatorMotor.setControl(dutyOut.withOutput(-0.1));
             elevatorMotor2.setControl(dutyOut.withOutput(-0.1));
-            targetPos = rotations;
-            System.out.println("Manual down");
-        } else {
-            // Hold last target position (preset or manual stop)
-            elevatorMotor.setControl(positionControl.withPosition(targetPos));
-            elevatorMotor2.setControl(positionControl.withPosition(targetPos));
-            System.out.println("Holding/moving to targetPos = " + targetPos);
-        }
-
-        System.out.println("Current rotations = " + rotations);
-        System.out.flush();
+          }        
+      }
     }
+    else {
+      elevatorMotor.setControl(dutyOut.withOutput(0.0));
+      elevatorMotor2.setControl(dutyOut.withOutput(0.0));
+      System.out.println("Elevator stopped");
+    }
+
+    
+    System.out.flush(); 
+  
+  
+}
 }
