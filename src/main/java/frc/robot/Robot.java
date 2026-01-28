@@ -56,7 +56,7 @@ public class Robot extends TimedRobot {
     elevatorMotor.getConfigurator().apply(cur);
     elevatorMotor2.getConfigurator().apply(cur);
 
-    System.out.println("Robot initialized safely.");
+    System.out.println("Robot initialized ");
   }
 
   @Override
@@ -79,11 +79,11 @@ public class Robot extends TimedRobot {
 
     if (x) {
       targetPos = HEIGHT_ONE;
-      System.out.println("AUTO → MID");
+      System.out.println("auto to mid");
     }
     if (b) {
       targetPos = HEIGHT_TWO;
-      System.out.println("AUTO → TOP");
+      System.out.println("auto to top");
     }
 
 
